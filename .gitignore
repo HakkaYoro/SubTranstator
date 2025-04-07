@@ -8,7 +8,7 @@ env/
 
 # Configs/Keys
 ~/.config/subtranslator/keys.json
-*.json
+# Ignore sensitive configs
 *.ini
 *.key
 *.enc
