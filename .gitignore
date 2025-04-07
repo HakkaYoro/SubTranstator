@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+
+# Configs/Keys
+~/.config/subtranslator/keys.json
+*.json
+*.ini
+*.key
+*.enc
+
+# Logs
+*.log
+.pytest_cache/
+.mypy_cache/
+
+# Subtitle folders
+Input/
+Temp/
+Output/
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
