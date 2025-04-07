@@ -28,20 +28,15 @@ pip install -r requirements.txt
 
 ## 🚀 Usage
 
-### Interactive Mode (recommended)
+### Recommended (Linux)
 
 ```bash
-python3 -m subtranslator.main
+./start.sh
 ```
 
+- This script activates your virtual environment (if any) and launches the TUI.
 - Use the TUI to select input file, target language, censorship, API keys, and model.
 - Start translation from the menu.
-
-### Batch Mode (future)
-
-```bash
-python3 subtranslator.py --input subtitles.srt --target-lang es --censorship
-```
 
 ---
 
