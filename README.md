@@ -13,7 +13,7 @@
 - 🤖 **Fetch & select Gemini models** dynamically
 - ✂️ **Chunked translation** with automatic splitting
 - 📝 **Merges parts** into a single output file
-- 🔐 **Secure API key storage**
+- 🔐 **Secure API key storage** (planned)
 - 📊 **Real-time progress display**
 
 ---
@@ -34,7 +34,18 @@ pip install -r requirements.txt
 ./start.sh
 ```
 
-- This script activates your virtual environment (if any) and launches the TUI.
+### Windows
+
+```bash
+python -m subtranslator.main
+```
+
+### MacOS
+
+```bash
+python3 -m subtranslator.main
+```
+
 - Use the TUI to select input file, target language, censorship, API keys, and model.
 - Start translation from the menu.
 
@@ -50,7 +61,7 @@ pip install -r requirements.txt
 
 ## ⚡ Gemini Model Requirement
 
-- For **uncensored translation**, you **must use the `gemini-flash-2.0` model**.
+- For **uncensored translation**, you **must use the `gemini-2.0-flash-exp` model**.
 - Other models may apply stricter content filters and block NSFW content.
 
 ---
@@ -60,6 +71,18 @@ pip install -r requirements.txt
 - `Input/` — Place your original `.srt` files here.
 - `Temp/` — Temporary chunk files during translation (auto-cleaned).
 - `Output/` — Final merged translated `.srt` files.
+
+---
+
+## 🛠️ To-Do
+
+- 🔐 **Encrypt API keys at rest**
+- 🗝️ **Passphrase-protected key storage**
+- 🧪 **Batch mode CLI**
+- 🧹 **Better error handling and retries**
+- 🌍 **Localization for other languages**
+- 🧩 **Plugin system for other AI providers**
+- 🧰 **Unit tests and CI integration**
 
 ---
 
