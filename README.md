@@ -81,7 +81,11 @@ python3 -m subtranslator.main
 - 🧪 **Batch mode CLI**
 - 🧹 **Better error handling and retries**
 - 🌍 **Localization for other languages**
-- 🧩 **Plugin system for other AI providers**
+- 🧩 **Plugin system for other AI providers:**
+  - 🦙 **Ollama** and other OpenAI-compatible local APIs
+  - 🤖 **OpenAI API** (ChatGPT, GPT-4)
+  - 🌐 **OpenRouter API** (multi-provider gateway)
+  - 🧠 **Claude API** (Anthropic's Claude models)
 - 🧰 **Unit tests and CI integration**
 
 ---

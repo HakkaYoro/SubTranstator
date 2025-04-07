@@ -3,7 +3,7 @@ import curses
 MENU_ITEMS = [
     "Select subtitle file",
     "Choose target language",
-    "Toggle NSFW censorship",
+    "Censorship Settings",
     "Manage API keys",
     "Fetch available Gemini models",
     "Start translation",
@@ -128,6 +128,170 @@ def toggle_censorship(stdscr, state):
     stdscr.getch()
 
 from subtranslator.api_manager import APIKeyManager
+
+import json
+
+def censorship_settings_menu(stdscr, state):
+    config_path = os.path.expanduser("~/.config/subtranslator/censor_list.json")
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    # Load or init banned words
+    try:
+        with open(config_path, "r") as f:
+            data = json.load(f)
+            words = data.get("words", [])
+    except:
+        words = []
+    state.setdefault('censorship_enabled', False)
+    state.setdefault('censorship_mode', 'ai')
+    state.setdefault('censorship_level', 'medium')
+
+    menu_items = ["Censorship?", "Mode: AI", "Mode: Local", "Censorship AI Level", "Edit Banned Words", "Back"]
+    selected_idx = 0
+
+    while True:
+        stdscr.clear()
+        stdscr.addstr(1, 2, "Censorship Settings", curses.A_BOLD)
+        for idx, item in enumerate(menu_items):
+            y = 3 + idx
+            label = item
+            if item.startswith("Censorship?"):
+                label = f"Censorship? [{'Yes' if state.get('censorship_enabled', False) else 'No'}]"
+            elif item.startswith("Mode: AI"):
+                label = f"Mode: AI [{'X' if state.get('censorship_mode')=='ai' else ' '}]"
+            elif item.startswith("Mode: Local"):
+                label = f"Mode: Local [{'X' if state.get('censorship_mode')=='local' else ' '}]"
+            elif item.startswith("Censorship AI Level"):
+                label = f"Censorship AI Level: {state.get('censorship_level','medium').capitalize()}"
+            elif item.startswith("Edit Banned Words"):
+                label = "Edit Banned Words"
+            elif item == "Back":
+                label = "Back"
+
+            if idx == selected_idx:
+                stdscr.attron(curses.color_pair(1))
+                stdscr.addstr(y, 4, label)
+                stdscr.attroff(curses.color_pair(1))
+            else:
+                stdscr.addstr(y, 4, label)
+        stdscr.refresh()
+
+        key = stdscr.getch()
+        if key == curses.KEY_UP and selected_idx > 0:
+            selected_idx -= 1
+        elif key == curses.KEY_DOWN and selected_idx < len(menu_items) - 1:
+            selected_idx += 1
+        elif key in [curses.KEY_ENTER, ord('\n'), ord(' ')]:
+            choice = menu_items[selected_idx]
+            if choice.startswith("Censorship?"):
+                state['censorship_enabled'] = not state.get('censorship_enabled', False)
+            elif choice.startswith("Mode: AI"):
+                state['censorship_mode'] = 'ai'
+            elif choice.startswith("Mode: Local"):
+                # Show warning popup
+                stdscr.clear()
+                stdscr.addstr(2, 2, "Local filtering lacks context awareness. Proceed? (Y/N)")
+                stdscr.refresh()
+                c = stdscr.getch()
+                if c in (ord('y'), ord('Y')):
+                    state['censorship_mode'] = 'local'
+                else:
+                    continue
+            elif choice.startswith("Censorship AI Level"):
+                level_options = ["low", "medium", "high"]
+                current = level_options.index(state.get('censorship_level', 'medium'))
+                next_level = (current + 1) % len(level_options)
+                state['censorship_level'] = level_options[next_level]
+            elif choice.startswith("Edit Banned Words"):
+                edit_banned_words_menu(stdscr, words, config_path)
+            elif choice == "Back":
+                break
+        elif key == 27:  # ESC
+            break
+
+def edit_banned_words_menu(stdscr, words, config_path):
+    menu_items = ["Add Word", "Remove Word", "Back"]
+    selected_idx = 0
+
+    while True:
+        stdscr.clear()
+        stdscr.addstr(1, 2, "Edit Banned Words", curses.A_BOLD)
+        for idx, item in enumerate(menu_items):
+            y = 3 + idx
+            if idx == selected_idx:
+                stdscr.attron(curses.color_pair(1))
+                stdscr.addstr(y, 4, item)
+                stdscr.attroff(curses.color_pair(1))
+            else:
+                stdscr.addstr(y, 4, item)
+
+        stdscr.refresh()
+        key = stdscr.getch()
+        if key == curses.KEY_UP and selected_idx > 0:
+            selected_idx -= 1
+        elif key == curses.KEY_DOWN and selected_idx < len(menu_items) - 1:
+            selected_idx += 1
+        elif key in [curses.KEY_ENTER, ord('\n'), ord(' ')]:
+            choice = menu_items[selected_idx]
+            if choice == "Add Word":
+                curses.echo()
+                stdscr.clear()
+                stdscr.addstr(2, 2, "Enter word to censor:")
+                stdscr.refresh()
+                input_win = curses.newwin(1, 30, 4, 2)
+                curses.curs_set(1)
+                box = ''
+                while True:
+                    input_win.clear()
+                    input_win.addstr(0, 0, box)
+                    input_win.refresh()
+                    ch = stdscr.getch()
+                    if ch in (curses.KEY_ENTER, ord('\n')):
+                        word = box.strip()
+                        if word and word not in words:
+                            words.append(word)
+                            with open(config_path, "w") as f:
+                                json.dump({"words": words}, f, indent=2)
+                        break
+                    elif ch == 27:
+                        break
+                    elif ch in (curses.KEY_BACKSPACE, 127, 8):
+                        box = box[:-1]
+                    elif 32 <= ch <= 126:
+                        box += chr(ch)
+                curses.curs_set(0)
+                curses.noecho()
+            elif choice == "Remove Word":
+                if not words:
+                    continue
+                idx_rm = 0
+                while True:
+                    stdscr.clear()
+                    stdscr.addstr(1, 2, "Select word to remove:", curses.A_BOLD)
+                    for idxw, word in enumerate(words):
+                        y = 3 + idxw
+                        if idxw == idx_rm:
+                            stdscr.attron(curses.color_pair(1))
+                            stdscr.addstr(y, 4, word)
+                            stdscr.attroff(curses.color_pair(1))
+                        else:
+                            stdscr.addstr(y, 4, word)
+                    stdscr.refresh()
+                    ch = stdscr.getch()
+                    if ch == curses.KEY_UP and idx_rm > 0:
+                        idx_rm -= 1
+                    elif ch == curses.KEY_DOWN and idx_rm < len(words) - 1:
+                        idx_rm += 1
+                    elif ch in [curses.KEY_ENTER, ord('\n'), ord(' ')]:
+                        del words[idx_rm]
+                        with open(config_path, "w") as f:
+                            json.dump({"words": words}, f, indent=2)
+                        break
+                    elif ch == 27:
+                        break
+            elif choice == "Back":
+                break
+        elif key == 27:
+            break
 
 def manage_api_keys(stdscr, api_manager):
     menu_items = ["List Keys", "Add Key", "Remove Key", "Back"]
@@ -345,24 +509,89 @@ def start_translation(stdscr, api_manager, state):
     total = len(subs)
     chunks = [subs[i:i+10] for i in range(0, total, 10)]
     part_files = []
+    import time
+    times = []
+    total_chunks = len(chunks)
 
     for idx, chunk in enumerate(chunks):
         stdscr.clear()
-        stdscr.addstr(2, 2, f"Translating chunk {idx+1}/{len(chunks)}...")
+
+        # Progress bar
+        bar_width = 40
+        progress = (idx) / total_chunks
+        filled = int(bar_width * progress)
+        bar = "[" + "#" * filled + "-" * (bar_width - filled) + "]"
+
+        # ETA and debug info
+        if times:
+            avg_time = sum(times) / len(times)
+            eta_seconds = int(avg_time * (total_chunks - idx))
+            eta_min = eta_seconds // 60
+            eta_sec = eta_seconds % 60
+            eta_str = f"{eta_min}m {eta_sec}s"
+            last_time = times[-1]
+            last_str = f"{last_time:.1f}s"
+            avg_str = f"{avg_time:.1f}s"
+        else:
+            eta_str = "Calculating..."
+            last_str = "-"
+            avg_str = "-"
+
+        stdscr.addstr(2, 2, f"Translating chunk {idx+1}/{total_chunks}")
+        stdscr.addstr(3, 2, bar)
+        stdscr.addstr(4, 2, f"ETA: {eta_str}")
+        stdscr.addstr(5, 2, f"Chunks timed: {len(times)}")
+        stdscr.addstr(6, 2, f"Last chunk: {last_str}")
+        stdscr.addstr(7, 2, f"Avg chunk: {avg_str}")
         stdscr.refresh()
+
+        chunk_start = time.time()
 
         # Renumber chunk subtitles from 1 upwards
         for i, sub in enumerate(chunk, start=1):
             sub.index = i
 
-        prompt = (
-            f"Translate the following subtitles into {target_lang}.\n\n"
-            "- Provide ONLY ONE natural, idiomatic translation per line.\n"
-            "- Do NOT include explanations, alternatives, or comments.\n"
-            "- Keep the numbering format: [number] translated text.\n"
-            "- If unsure, pick the most neutral, natural-sounding translation.\n"
-            "- Do not output anything else.\n\n"
-        )
+        if state.get('censorship_enabled'):
+            level = state.get('censorship_level', 'medium')
+            if level == 'low':
+                prompt = (
+                    f"Translate the following subtitles into {target_lang}.\n\n"
+                    "- Replace only highly offensive or explicit terms with polite equivalents.\n"
+                    "- Preserve humor, tone, and mild slang.\n"
+                    "- Do NOT include explanations or alternatives.\n"
+                    "- Keep the numbering format: [number] translated text.\n"
+                    "- Do not output anything else.\n\n"
+                )
+            elif level == 'medium':
+                prompt = (
+                    f"Translate the following subtitles into {target_lang}.\n\n"
+                    "- Replace explicit, offensive, or suggestive language with polite or neutral terms.\n"
+                    "- Maintain overall tone but avoid inappropriate content.\n"
+                    "- Do NOT include explanations or alternatives.\n"
+                    "- Keep the numbering format: [number] translated text.\n"
+                    "- Do not output anything else.\n\n"
+                )
+            elif level == 'high':
+                prompt = (
+                    f"Translate the following subtitles into {target_lang}.\n\n"
+                    "- Aggressively censor all NSFW, offensive, or suggestive language.\n"
+                    "- Replace with family-friendly, polite expressions.\n"
+                    "- Maintain timing and formatting.\n"
+                    "- Do NOT include explanations or alternatives.\n"
+                    "- Keep the numbering format: [number] translated text.\n"
+                    "- Do not output anything else.\n\n"
+                )
+            else:
+                prompt = ""
+        else:
+            prompt = (
+                f"Translate the following subtitles into {target_lang}.\n\n"
+                "- Provide ONLY ONE natural, idiomatic translation per line.\n"
+                "- Do NOT include explanations, alternatives, or comments.\n"
+                "- Keep the numbering format: [number] translated text.\n"
+                "- If unsure, pick the most neutral, natural-sounding translation.\n"
+                "- Do not output anything else.\n\n"
+            )
         for sub in chunk:
             prompt += f"[{sub.index}] {sub.text}\n"
 
@@ -377,6 +606,9 @@ def start_translation(stdscr, api_manager, state):
             stdscr.refresh()
             stdscr.getch()
             continue
+
+        elapsed = time.time() - chunk_start
+        times.append(elapsed)
 
         # Parse response and update chunk
         for line in translated_text.splitlines():
@@ -453,8 +685,8 @@ def main_menu(stdscr, api_manager):
                 select_subtitle_file(stdscr, state)
             elif label == "Choose target language":
                 choose_target_language(stdscr, state)
-            elif label == "Toggle NSFW censorship":
-                toggle_censorship(stdscr, state)
+            elif label == "Censorship Settings":
+                censorship_settings_menu(stdscr, state)
             elif label == "Manage API keys":
                 manage_api_keys(stdscr, api_manager)
             elif label == "Fetch available Gemini models":
