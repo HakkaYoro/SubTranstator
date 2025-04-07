@@ -1,0 +1,13 @@
+{
+  "welcome": "Welcome to SubTranslator",
+  "select_file": "Select a subtitle (.srt) file",
+  "select_language": "Choose target language",
+  "toggle_censorship": "Toggle NSFW censorship",
+  "manage_api_keys": "Manage API keys",
+  "fetch_models": "Fetch available Gemini models",
+  "start_translation": "Start translation",
+  "exit": "Exit",
+  "help": "Press F1 for help",
+  "processing": "Processing entry {current}/{total}",
+  "done": "Translation complete"
+}
